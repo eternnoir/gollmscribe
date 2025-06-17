@@ -1,0 +1,49 @@
+# gollmscribe configuration file example
+# Copy this to ~/.gollmscribe.yaml and customize as needed
+
+# LLM Provider Configuration
+provider:
+  name: "gemini"                    # Provider: gemini, openai (future)
+  api_key: "your-api-key-here"      # API key (better to use GOLLMSCRIBE_API_KEY env var)
+  base_url: ""                      # Custom API base URL (optional)
+  timeout: "30s"                    # Request timeout
+  retries: 3                        # Number of retry attempts
+  model: ""                         # Model name (uses provider default)
+  temperature: 0.1                  # Response creativity (0.0-1.0)
+  max_tokens: 4096                  # Maximum tokens per request
+
+# Audio Processing Configuration
+audio:
+  chunk_minutes: 30                 # Chunk duration in minutes
+  overlap_seconds: 60               # Overlap between chunks in seconds
+  output_format: "mp3"              # Format for processing (mp3, wav, flac)
+  sample_rate: 44100                # Target sample rate
+  quality: 5                        # Compression quality (1-9)
+  temp_dir: "/tmp/gollmscribe"      # Temporary directory
+  keep_temp_files: false            # Keep temporary files after processing
+  workers: 3                        # Number of concurrent workers
+
+# Transcription Configuration
+transcribe:
+  language: "auto"                  # Language code (auto, zh-TW, en, etc.)
+  with_timestamp: true              # Include timestamps
+  with_speaker_id: true             # Include speaker identification
+  auto_language_detect: true        # Auto-detect language
+  confidence_threshold: 0.8         # Minimum confidence for segments
+  
+  # Default transcription prompt
+  default_prompt: "請將以下音檔轉錄為精確的逐字稿，包含時間戳記和說話者識別。保持自然的語言流暢度，並正確標注標點符號。"
+  
+  # Prompt templates for different use cases
+  prompt_templates:
+    meeting: "請轉錄此會議錄音，識別各個說話者，並在最後列出討論的重點和決議事項。"
+    interview: "請轉錄此訪談內容，清楚區分訪問者和受訪者，保持問答格式的完整性。"
+    lecture: "請轉錄此教學內容，識別講師說話部分，並適當地標注重點概念和章節分段。"
+
+# Output Configuration
+output:
+  format: "json"                    # Output format (json, text, srt)
+  directory: ""                     # Output directory (default: same as input)
+  filename: ""                      # Output filename pattern
+  include_metadata: true            # Include processing metadata
+  pretty_print: true               # Pretty-print JSON output

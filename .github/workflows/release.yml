@@ -1,0 +1,66 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Release
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.21'
+    
+    - name: Run tests
+      run: go test -v ./...
+    
+    - name: Build release binaries
+      run: make release
+    
+    - name: Create Release
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ github.ref }}
+        release_name: Release ${{ github.ref }}
+        draft: false
+        prerelease: false
+        body: |
+          ## Changes in this Release
+          
+          See [CHANGELOG.md](https://github.com/eternnoir/gollmscribe/blob/main/CHANGELOG.md) for details.
+          
+          ## Installation
+          
+          ### Using Go
+          ```bash
+          go install github.com/eternnoir/gollmscribe/cmd/gollmscribe@${{ github.ref }}
+          ```
+          
+          ### Download Binary
+          Download the appropriate binary for your platform from the assets below.
+    
+    - name: Upload Release Assets
+      run: |
+        for file in build/*.tar.gz build/*.zip; do
+          if [ -f "$file" ]; then
+            echo "Uploading $file"
+            gh release upload ${{ github.ref_name }} "$file" --clobber
+          fi
+        done
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
