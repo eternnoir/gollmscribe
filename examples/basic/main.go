@@ -34,16 +34,13 @@ func main() {
 
 	// Create transcription request
 	req := &transcriber.TranscribeRequest{
-		FilePath: inputFile,
-		Language: "auto",
+		FilePath:     inputFile,
+		CustomPrompt: "Please provide a complete transcription with speaker identification and timestamps.",
 		Options: transcriber.TranscribeOptions{
 			ChunkMinutes:   30,
 			OverlapSeconds: 60,
-			WithTimestamp:  true,
-			WithSpeakerID:  true,
 			Workers:        3,
 			Temperature:    0.1,
-			OutputFormat:   "json",
 		},
 	}
 

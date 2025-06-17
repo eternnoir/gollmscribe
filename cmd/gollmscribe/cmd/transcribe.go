@@ -32,7 +32,7 @@ Examples:
   gollmscribe transcribe audio.mp3
 
   # Transcribe with custom output
-  gollmscribe transcribe video.mp4 -o transcript.json
+  gollmscribe transcribe video.mp4 -o transcript.txt
 
   # Transcribe with custom prompt
   gollmscribe transcribe meeting.wav -p "Transcribe the meeting and list action items"
@@ -40,8 +40,8 @@ Examples:
   # Batch transcribe with custom settings
   gollmscribe transcribe *.wav --chunk-minutes 20 --overlap-seconds 45
 
-  # Transcribe with speaker identification
-  gollmscribe transcribe interview.mp3 --with-speaker-id --with-timestamp`,
+  # Transcribe with prompt file
+  gollmscribe transcribe interview.mp3 --prompt-file my-prompt.txt`,
 	Args: cobra.MinimumNArgs(1),
 	RunE: runTranscribe,
 }
@@ -51,14 +51,10 @@ func init() {
 
 	// Output options
 	transcribeCmd.Flags().StringP("output", "o", "", "output file path (default: input_file.txt)")
-	transcribeCmd.Flags().String("format", "text", "output format (json, text, srt)")
 
 	// Transcription options
 	transcribeCmd.Flags().StringP("prompt", "p", "", "custom transcription prompt")
 	transcribeCmd.Flags().String("prompt-file", "", "file containing custom prompt")
-	transcribeCmd.Flags().String("language", "auto", "language code (auto, zh-TW, en, etc.)")
-	transcribeCmd.Flags().Bool("with-timestamp", true, "include timestamps in output")
-	transcribeCmd.Flags().Bool("with-speaker-id", true, "include speaker identification")
 
 	// Processing options
 	transcribeCmd.Flags().Int("chunk-minutes", 30, "chunk duration in minutes")
@@ -71,10 +67,6 @@ func init() {
 	transcribeCmd.Flags().Bool("progress", true, "show progress during transcription")
 
 	// Bind flags to viper
-	_ = viper.BindPFlag("transcribe.format", transcribeCmd.Flags().Lookup("format"))
-	_ = viper.BindPFlag("transcribe.language", transcribeCmd.Flags().Lookup("language"))
-	_ = viper.BindPFlag("transcribe.with_timestamp", transcribeCmd.Flags().Lookup("with-timestamp"))
-	_ = viper.BindPFlag("transcribe.with_speaker_id", transcribeCmd.Flags().Lookup("with-speaker-id"))
 	_ = viper.BindPFlag("transcribe.chunk_minutes", transcribeCmd.Flags().Lookup("chunk-minutes"))
 	_ = viper.BindPFlag("transcribe.overlap_seconds", transcribeCmd.Flags().Lookup("overlap-seconds"))
 	_ = viper.BindPFlag("transcribe.workers", transcribeCmd.Flags().Lookup("workers"))
@@ -162,8 +154,6 @@ func loadConfig() *config.Config {
 	cfg.Provider.Name = viper.GetString("provider")
 	cfg.Provider.Model = viper.GetString("model")
 	cfg.Audio.TempDir = viper.GetString("temp_dir")
-	cfg.Transcribe.Language = viper.GetString("transcribe.language")
-	cfg.Output.Format = viper.GetString("transcribe.format")
 
 	return cfg
 }
@@ -214,19 +204,13 @@ func getTranscribeOptions(cmd *cobra.Command) transcriber.TranscribeOptions {
 	overlapSeconds, _ := cmd.Flags().GetInt("overlap-seconds")
 	workers, _ := cmd.Flags().GetInt("workers")
 	temperature, _ := cmd.Flags().GetFloat32("temperature")
-	withTimestamp, _ := cmd.Flags().GetBool("with-timestamp")
-	withSpeakerID, _ := cmd.Flags().GetBool("with-speaker-id")
 	preserveAudio, _ := cmd.Flags().GetBool("preserve-audio")
-	format, _ := cmd.Flags().GetString("format")
 
 	return transcriber.TranscribeOptions{
 		ChunkMinutes:   chunkMinutes,
 		OverlapSeconds: overlapSeconds,
-		WithTimestamp:  withTimestamp,
-		WithSpeakerID:  withSpeakerID,
 		Workers:        workers,
 		Temperature:    temperature,
-		OutputFormat:   format,
 		PreserveAudio:  preserveAudio,
 	}
 }
@@ -263,25 +247,14 @@ func processFile(tr transcriber.Transcriber, filePath string, options transcribe
 	// Get output path
 	outputPath, _ := cmd.Flags().GetString("output")
 	if outputPath == "" {
-		ext := ".txt"
-		if options.OutputFormat == "json" {
-			ext = ".json"
-		} else if options.OutputFormat == "srt" {
-			ext = ".srt"
-		}
-		outputPath = strings.TrimSuffix(filePath, filepath.Ext(filePath)) + ext
+		outputPath = strings.TrimSuffix(filePath, filepath.Ext(filePath)) + ".txt"
 	}
-	log.Debug().Str("output_path", outputPath).Str("format", options.OutputFormat).Msg("Output configuration")
-
-	// Get language
-	language, _ := cmd.Flags().GetString("language")
-	log.Debug().Str("language", language).Msg("Language configuration")
+	log.Debug().Str("output_path", outputPath).Msg("Output configuration")
 
 	// Create transcription request
 	req := &transcriber.TranscribeRequest{
 		FilePath:     filePath,
 		OutputPath:   outputPath,
-		Language:     language,
 		CustomPrompt: customPrompt,
 		Options:      options,
 	}

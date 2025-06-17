@@ -306,21 +306,8 @@ func (p *Provider) parseResponse(resp *GeminiResponse, chunk *providers.AudioChu
 func (p *Provider) buildDefaultPrompt(options providers.TranscriptionOptions) string {
 	prompt := "Please provide a complete, accurate, word-for-word transcription of the following audio. Include every word spoken, including filler words (um, uh, etc.), false starts, and repetitions. Maintain the speaker's original phrasing and word choice."
 
-	var requirements []string
-
-	if options.WithTimestamp {
-		requirements = append(requirements, "include precise timestamps for each segment")
-	}
-
-	if options.WithSpeakerID {
-		requirements = append(requirements, "identify and label different speakers clearly")
-	}
-
-	if len(requirements) > 0 {
-		prompt += " Requirements: " + strings.Join(requirements, ", ") + "."
-	}
-
-	prompt += " Add appropriate punctuation and capitalization while preserving the natural speech patterns and conversational flow."
+	// Add appropriate punctuation and capitalization while preserving the natural speech patterns
+	prompt += " Add appropriate punctuation and capitalization while preserving the natural speech patterns."
 
 	return prompt
 }

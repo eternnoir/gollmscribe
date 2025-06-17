@@ -64,25 +64,13 @@ type AudioConfig struct {
 
 // TranscribeConfig contains transcription settings
 type TranscribeConfig struct {
-	// Default Options
-	Language      string `yaml:"language" mapstructure:"language"`
-	WithTimestamp bool   `yaml:"with_timestamp" mapstructure:"with_timestamp"`
-	WithSpeakerID bool   `yaml:"with_speaker_id" mapstructure:"with_speaker_id"`
-
 	// Custom Prompts
 	DefaultPrompt   string            `yaml:"default_prompt" mapstructure:"default_prompt"`
 	PromptTemplates map[string]string `yaml:"prompt_templates" mapstructure:"prompt_templates"`
-
-	// Advanced Options
-	AutoLanguageDetect  bool    `yaml:"auto_language_detect" mapstructure:"auto_language_detect"`
-	ConfidenceThreshold float32 `yaml:"confidence_threshold" mapstructure:"confidence_threshold"`
 }
 
 // OutputConfig contains output formatting settings
 type OutputConfig struct {
-	// Format Options
-	Format string `yaml:"format" mapstructure:"format"` // json, text, srt
-
 	// File Options
 	Directory string `yaml:"directory" mapstructure:"directory"`
 	Filename  string `yaml:"filename" mapstructure:"filename"`
@@ -112,20 +100,14 @@ func DefaultConfig() *Config {
 			TempDir:        filepath.Join(os.TempDir(), "gollmscribe"),
 		},
 		Transcribe: TranscribeConfig{
-			Language:      "auto",
-			WithTimestamp: true,
-			WithSpeakerID: true,
-			DefaultPrompt: "Please provide a complete, accurate, word-for-word transcription of the following audio. Include every word spoken, including filler words (um, uh, etc.), false starts, and repetitions. Maintain the speaker's original phrasing and word choice. Add appropriate punctuation and capitalization while preserving the natural speech patterns. Include timestamps and speaker identification when available.",
+			DefaultPrompt: "Please provide a complete, accurate, word-for-word transcription of the following audio. Include every word spoken, including filler words (um, uh, etc.), false starts, and repetitions. Maintain the speaker's original phrasing and word choice. Add appropriate punctuation and capitalization while preserving the natural speech patterns.",
 			PromptTemplates: map[string]string{
 				"meeting":   "Please transcribe this meeting recording, identify each speaker, and provide a summary of key discussion points and action items at the end.",
 				"interview": "Please transcribe this interview, clearly distinguishing between interviewer and interviewee, maintaining the complete question-answer format.",
 				"lecture":   "Please transcribe this educational content, identify the instructor's speech, and appropriately mark key concepts and section breaks.",
 			},
-			AutoLanguageDetect:  true,
-			ConfidenceThreshold: 0.8,
 		},
 		Output: OutputConfig{
-			Format:          "text",
 			IncludeMetadata: true,
 			PrettyPrint:     true,
 		},

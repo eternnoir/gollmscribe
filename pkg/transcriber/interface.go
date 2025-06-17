@@ -11,7 +11,6 @@ import (
 type TranscribeRequest struct {
 	FilePath     string
 	OutputPath   string
-	Language     string
 	CustomPrompt string
 	Options      TranscribeOptions
 }
@@ -20,12 +19,9 @@ type TranscribeRequest struct {
 type TranscribeOptions struct {
 	ChunkMinutes   int // Default: 30
 	OverlapSeconds int // Default: 60
-	WithTimestamp  bool
-	WithSpeakerID  bool
 	Workers        int // Default: 3
 	Temperature    float32
-	OutputFormat   string // json, text, srt
-	PreserveAudio  bool   // Keep temporary audio files
+	PreserveAudio  bool // Keep temporary audio files
 }
 
 // TranscribeResult represents the complete transcription result

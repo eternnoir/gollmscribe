@@ -93,7 +93,7 @@ func processSingleFile(tr transcriber.Transcriber, inputFile string, cfg *config
 	fmt.Printf("Processing file: %s\n", inputFile)
 
 	// Determine output path
-	outputPath := generateOutputPath(inputFile, cfg.Output.Format)
+	outputPath := generateOutputPath(inputFile, "txt")
 
 	// Choose prompt based on file name hints
 	customPrompt := choosePromptByFilename(inputFile, cfg)
@@ -102,16 +102,12 @@ func processSingleFile(tr transcriber.Transcriber, inputFile string, cfg *config
 	req := &transcriber.TranscribeRequest{
 		FilePath:     inputFile,
 		OutputPath:   outputPath,
-		Language:     cfg.Transcribe.Language,
 		CustomPrompt: customPrompt,
 		Options: transcriber.TranscribeOptions{
 			ChunkMinutes:   cfg.Audio.ChunkMinutes,
 			OverlapSeconds: cfg.Audio.OverlapSeconds,
-			WithTimestamp:  cfg.Transcribe.WithTimestamp,
-			WithSpeakerID:  cfg.Transcribe.WithSpeakerID,
 			Workers:        cfg.Audio.Workers,
 			Temperature:    cfg.Provider.Temperature,
-			OutputFormat:   cfg.Output.Format,
 			PreserveAudio:  cfg.Audio.KeepTempFiles,
 		},
 	}
@@ -145,22 +141,18 @@ func processBatchFiles(tr transcriber.Transcriber, inputFiles []string, cfg *con
 	// Create batch requests
 	var requests []*transcriber.TranscribeRequest
 	for _, inputFile := range inputFiles {
-		outputPath := generateOutputPath(inputFile, cfg.Output.Format)
+		outputPath := generateOutputPath(inputFile, "txt")
 		customPrompt := choosePromptByFilename(inputFile, cfg)
 
 		req := &transcriber.TranscribeRequest{
 			FilePath:     inputFile,
 			OutputPath:   outputPath,
-			Language:     cfg.Transcribe.Language,
 			CustomPrompt: customPrompt,
 			Options: transcriber.TranscribeOptions{
 				ChunkMinutes:   cfg.Audio.ChunkMinutes,
 				OverlapSeconds: cfg.Audio.OverlapSeconds,
-				WithTimestamp:  cfg.Transcribe.WithTimestamp,
-				WithSpeakerID:  cfg.Transcribe.WithSpeakerID,
 				Workers:        cfg.Audio.Workers,
 				Temperature:    cfg.Provider.Temperature,
-				OutputFormat:   cfg.Output.Format,
 				PreserveAudio:  cfg.Audio.KeepTempFiles,
 			},
 		}

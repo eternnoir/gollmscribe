@@ -22,15 +22,12 @@ type TranscriptionRequest struct {
 	AudioFormat string
 	MimeType    string
 	Filename    string
-	Language    string
 	Prompt      string
 	Options     TranscriptionOptions
 }
 
 // TranscriptionOptions provides additional configuration for transcription
 type TranscriptionOptions struct {
-	WithTimestamp  bool
-	WithSpeakerID  bool
 	Temperature    float32
 	MaxTokens      int
 	TimeoutSeconds int

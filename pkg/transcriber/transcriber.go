@@ -51,7 +51,6 @@ func (t *TranscriberImpl) TranscribeWithProgress(ctx context.Context, req *Trans
 
 	log.Info().
 		Str("output_path", req.OutputPath).
-		Str("language", req.Language).
 		Interface("options", req.Options).
 		Msg("Starting transcription with progress")
 
@@ -146,8 +145,8 @@ func (t *TranscriberImpl) TranscribeWithProgress(ctx context.Context, req *Trans
 
 	// Save output if specified
 	if req.OutputPath != "" {
-		log.Info().Str("output_path", req.OutputPath).Str("format", req.Options.OutputFormat).Msg("Saving transcription result")
-		if err := t.saveResult(finalResult, req.OutputPath, req.Options.OutputFormat); err != nil {
+		log.Info().Str("output_path", req.OutputPath).Msg("Saving transcription result")
+		if err := t.saveResult(finalResult, req.OutputPath, "text"); err != nil {
 			log.Error().Err(err).Str("output_path", req.OutputPath).Msg("Failed to save result")
 			return nil, fmt.Errorf("failed to save result: %w", err)
 		}
@@ -327,11 +326,8 @@ func (t *TranscriberImpl) transcribeChunk(ctx context.Context, chunk *audio.Chun
 		AudioFormat: "mp3",
 		MimeType:    "audio/mpeg",
 		Filename:    filepath.Base(chunk.TempFilePath),
-		Language:    req.Language,
 		Prompt:      req.CustomPrompt,
 		Options: providers.TranscriptionOptions{
-			WithTimestamp:  req.Options.WithTimestamp,
-			WithSpeakerID:  req.Options.WithSpeakerID,
 			Temperature:    req.Options.Temperature,
 			MaxTokens:      65535,
 			TimeoutSeconds: 300,
@@ -339,10 +335,7 @@ func (t *TranscriberImpl) transcribeChunk(ctx context.Context, chunk *audio.Chun
 	}
 
 	log.Debug().
-		Str("language", req.Language).
 		Float32("temperature", req.Options.Temperature).
-		Bool("with_timestamp", req.Options.WithTimestamp).
-		Bool("with_speaker_id", req.Options.WithSpeakerID).
 		Msg("Sending chunk to provider for transcription")
 
 	// Transcribe using provider

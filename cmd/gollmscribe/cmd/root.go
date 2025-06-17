@@ -24,9 +24,7 @@ Features:
 - Support for multiple audio/video formats (WAV, MP3, M4A, FLAC, MP4)
 - Automatic video to audio conversion
 - Intelligent chunking with overlap for long audio files
-- Speaker identification and timestamps
-- Multiple output formats (JSON, text, SRT)
-- Custom transcription prompts
+- Custom transcription prompts for different use cases
 - Batch processing support`,
 	Version: "1.0.0",
 }

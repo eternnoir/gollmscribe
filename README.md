@@ -19,10 +19,8 @@ A Go application that transforms audio files into precise text transcripts using
 - **Smart Chunking**: Automatically splits large files into manageable chunks with intelligent overlap handling
 - **LLM Integration**: Supports multiple LLM providers (currently Gemini, more coming soon)
 - **Concurrent Processing**: Efficient parallel processing of audio chunks for faster transcription
-- **Flexible Output**: Export transcripts in JSON, plain text, or SRT subtitle format
-- **Speaker Identification**: Automatic speaker diarization and identification
-- **Timestamp Support**: Precise timestamps for each transcribed segment
 - **Custom Prompts**: Use specialized prompts for different content types (meetings, interviews, lectures)
+- **Prompt-driven Features**: Control output format, speaker identification, timestamps, and more through intelligent prompts
 - **Configurable**: Comprehensive configuration options via YAML or environment variables
 
 ## 🚀 Installation
@@ -78,11 +76,14 @@ export GOLLMSCRIBE_API_KEY="your-gemini-api-key"
 # Transcribe an audio file
 gollmscribe transcribe audio.mp3
 
-# Transcribe with specific output format
-gollmscribe transcribe --format json --output transcript.json audio.mp3
+# Transcribe with custom output file
+gollmscribe transcribe --output transcript.txt audio.mp3
 
 # Use a custom prompt
 gollmscribe transcribe --prompt "Transcribe this meeting recording" meeting.mp4
+
+# Use prompt from file
+gollmscribe transcribe --prompt-file my-prompt.txt interview.mp3
 ```
 
 #### Advanced Options
@@ -91,14 +92,68 @@ gollmscribe transcribe --prompt "Transcribe this meeting recording" meeting.mp4
 # Configure chunking parameters
 gollmscribe transcribe --chunk-minutes 20 --overlap-seconds 30 audio.wav
 
-# Enable speaker identification and timestamps
-gollmscribe transcribe --with-speaker --with-timestamp interview.mp3
-
-# Use specific language
-gollmscribe transcribe --language zh-TW podcast.mp3
-
 # Process multiple files
 gollmscribe transcribe *.mp3
+
+# Adjust processing settings
+gollmscribe transcribe --workers 5 --temperature 0.2 conference.mp4
+```
+
+### Prompt Examples for Different Use Cases
+
+The power of gollmscribe lies in using custom prompts for different transcription scenarios. Here are some practical examples:
+
+#### Meeting Transcription with Speaker Identification
+
+```bash
+# Create a prompt file for meeting transcription
+cat > meeting-prompt.txt << 'EOF'
+Please create a verbatim transcript of the provided meeting recording. No timestamps are needed, but speaker identification is required. Combine consecutive speeches from the same speaker. Use the format specified in <output_format>. You must generate the transcript completely and accurately without missing any words.
+
+<output_format>
+English Name (中文名稱)：
+Speech content................
+</output_format>
+EOF
+
+# Use the prompt file
+gollmscribe transcribe --prompt-file meeting-prompt.txt meeting.wav
+```
+
+#### Interview Transcription
+
+```bash
+gollmscribe transcribe --prompt "Please transcribe this interview with clear speaker identification. Format as Q: [Question] A: [Answer]. Include natural speech patterns and pauses marked with [pause]." interview.mp3
+```
+
+#### Educational Content
+
+```bash
+gollmscribe transcribe --prompt "Transcribe this lecture content. Structure the output with clear headings for different topics discussed. Include important terminology and concepts exactly as spoken." lecture.mp4
+```
+
+#### Medical/Legal Documentation
+
+```bash
+gollmscribe transcribe --prompt "Provide precise medical transcription with exact terminology. Include speaker identification for doctor and patient. Mark any unclear sections with [unclear]." medical-consultation.wav
+```
+
+#### Podcast Transcription
+
+```bash
+gollmscribe transcribe --prompt "Transcribe this podcast episode. Include speaker names, natural conversation flow, and mark significant pauses or laughter as [laughter] or [pause]." podcast.mp3
+```
+
+#### Multilingual Content
+
+```bash
+gollmscribe transcribe --prompt "Transcribe this Chinese content while maintaining the original tone and expressions. Keep English words in their original form and appropriately mark mixed Chinese-English sections." chinese-content.wav
+```
+
+#### Summary with Key Points
+
+```bash
+gollmscribe transcribe --prompt "Transcribe the full content and then provide a summary with key action items at the end. Format: [FULL TRANSCRIPT] followed by [SUMMARY] and [ACTION ITEMS]." business-meeting.mp4
 ```
 
 ### Configuration
@@ -117,9 +172,11 @@ audio:
   workers: 3
 
 transcribe:
-  language: "auto"
-  with_timestamp: true
-  with_speaker_id: true
+  default_prompt: "Please provide a complete, accurate transcription..."
+  prompt_templates:
+    meeting: "Please transcribe this meeting recording, identify each speaker..."
+    interview: "Please transcribe this interview, clearly distinguishing..."
+    lecture: "Please transcribe this educational content..."
 ```
 
 See [.gollmscribe.yaml.example](.gollmscribe.yaml.example) for all available options.
@@ -147,9 +204,12 @@ func main() {
     // Transcribe file
     req := &transcriber.TranscribeRequest{
         FilePath: "audio.mp3",
+        CustomPrompt: "Please transcribe with speaker identification",
         Options: transcriber.TranscribeOptions{
-            WithTimestamp: true,
-            WithSpeakerID: true,
+            ChunkMinutes:   30,
+            OverlapSeconds: 60,
+            Workers:        3,
+            Temperature:    0.1,
         },
     }
     
