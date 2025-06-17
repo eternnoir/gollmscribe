@@ -44,6 +44,7 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.gollmscribe.yaml)")
 	rootCmd.PersistentFlags().String("api-key", "", "LLM provider API key")
 	rootCmd.PersistentFlags().String("provider", "gemini", "LLM provider (gemini, openai)")
+	rootCmd.PersistentFlags().String("model", "", "model name to use (e.g., gemini-1.5-pro, gemini-2.5-flash)")
 	rootCmd.PersistentFlags().String("temp-dir", "", "temporary directory for processing")
 	rootCmd.PersistentFlags().Bool("verbose", false, "verbose output (deprecated, use --log-level debug)")
 
@@ -57,6 +58,7 @@ func init() {
 	// Bind flags to viper
 	_ = viper.BindPFlag("api_key", rootCmd.PersistentFlags().Lookup("api-key"))
 	_ = viper.BindPFlag("provider", rootCmd.PersistentFlags().Lookup("provider"))
+	_ = viper.BindPFlag("model", rootCmd.PersistentFlags().Lookup("model"))
 	_ = viper.BindPFlag("temp_dir", rootCmd.PersistentFlags().Lookup("temp-dir"))
 	_ = viper.BindPFlag("verbose", rootCmd.PersistentFlags().Lookup("verbose"))
 

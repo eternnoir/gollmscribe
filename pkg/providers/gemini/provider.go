@@ -17,13 +17,14 @@ import (
 const (
 	defaultBaseURL = "https://generativelanguage.googleapis.com"
 	apiVersion     = "v1beta"
-	modelName      = "gemini-2.5-pro-preview-06-05"
+	modelName      = "gemini-2.5-flash"
 )
 
 // Provider implements the LLM provider interface for Google Gemini
 type Provider struct {
 	apiKey     string
 	baseURL    string
+	model      string
 	timeout    time.Duration
 	retries    int
 	httpClient *http.Client
@@ -92,6 +93,7 @@ func NewProvider(apiKey string, options ...ProviderOption) *Provider {
 	p := &Provider{
 		apiKey:  apiKey,
 		baseURL: defaultBaseURL,
+		model:   modelName, // Use default model if not specified
 		timeout: 30 * time.Second,
 		retries: 3,
 		httpClient: &http.Client{
@@ -133,6 +135,15 @@ func WithTimeout(timeout time.Duration) ProviderOption {
 func WithRetries(retries int) ProviderOption {
 	return func(p *Provider) {
 		p.retries = retries
+	}
+}
+
+// WithModel sets the model name
+func WithModel(model string) ProviderOption {
+	return func(p *Provider) {
+		if model != "" {
+			p.model = model
+		}
 	}
 }
 
@@ -224,7 +235,7 @@ func (p *Provider) makeRequest(ctx context.Context, req *GeminiRequest) (*Gemini
 		return nil, fmt.Errorf("failed to marshal request: %w", err)
 	}
 
-	url := fmt.Sprintf("%s/%s/models/%s:generateContent?key=%s", p.baseURL, apiVersion, modelName, p.apiKey)
+	url := fmt.Sprintf("%s/%s/models/%s:generateContent?key=%s", p.baseURL, apiVersion, p.model, p.apiKey)
 
 	httpReq, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewBuffer(jsonData))
 	if err != nil {
@@ -293,23 +304,23 @@ func (p *Provider) parseResponse(resp *GeminiResponse, chunk *providers.AudioChu
 
 // buildDefaultPrompt creates a default transcription prompt
 func (p *Provider) buildDefaultPrompt(options providers.TranscriptionOptions) string {
-	prompt := "Please transcribe the following audio into an accurate verbatim transcript."
+	prompt := "Please provide a complete, accurate, word-for-word transcription of the following audio. Include every word spoken, including filler words (um, uh, etc.), false starts, and repetitions. Maintain the speaker's original phrasing and word choice."
 
 	var requirements []string
 
 	if options.WithTimestamp {
-		requirements = append(requirements, "include timestamps")
+		requirements = append(requirements, "include precise timestamps for each segment")
 	}
 
 	if options.WithSpeakerID {
-		requirements = append(requirements, "identify different speakers")
+		requirements = append(requirements, "identify and label different speakers clearly")
 	}
 
 	if len(requirements) > 0 {
 		prompt += " Requirements: " + strings.Join(requirements, ", ") + "."
 	}
 
-	prompt += " Maintain natural language flow and punctuate properly."
+	prompt += " Add appropriate punctuation and capitalization while preserving the natural speech patterns and conversational flow."
 
 	return prompt
 }

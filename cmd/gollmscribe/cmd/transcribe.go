@@ -160,6 +160,7 @@ func loadConfig() *config.Config {
 	// Override with viper values
 	cfg.Provider.APIKey = viper.GetString("api_key")
 	cfg.Provider.Name = viper.GetString("provider")
+	cfg.Provider.Model = viper.GetString("model")
 	cfg.Audio.TempDir = viper.GetString("temp_dir")
 	cfg.Transcribe.Language = viper.GetString("transcribe.language")
 	cfg.Output.Format = viper.GetString("transcribe.format")
@@ -191,6 +192,7 @@ func initializeProvider(cfg *config.Config) (*gemini.Provider, error) {
 			cfg.Provider.APIKey,
 			gemini.WithTimeout(timeout),
 			gemini.WithRetries(cfg.Provider.Retries),
+			gemini.WithModel(cfg.Provider.Model),
 		)
 
 		log.Debug().Msg("Validating provider configuration")

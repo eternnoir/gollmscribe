@@ -115,7 +115,7 @@ func DefaultConfig() *Config {
 			Language:      "auto",
 			WithTimestamp: true,
 			WithSpeakerID: true,
-			DefaultPrompt: "Please transcribe the following audio into an accurate verbatim transcript with timestamps and speaker identification. Maintain natural language flow and punctuate properly.",
+			DefaultPrompt: "Please provide a complete, accurate, word-for-word transcription of the following audio. Include every word spoken, including filler words (um, uh, etc.), false starts, and repetitions. Maintain the speaker's original phrasing and word choice. Add appropriate punctuation and capitalization while preserving the natural speech patterns. Include timestamps and speaker identification when available.",
 			PromptTemplates: map[string]string{
 				"meeting":   "Please transcribe this meeting recording, identify each speaker, and provide a summary of key discussion points and action items at the end.",
 				"interview": "Please transcribe this interview, clearly distinguishing between interviewer and interviewee, maintaining the complete question-answer format.",
