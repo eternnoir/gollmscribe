@@ -303,7 +303,7 @@ func (p *Provider) parseResponse(resp *GeminiResponse, chunk *providers.AudioChu
 }
 
 // buildDefaultPrompt creates a default transcription prompt
-func (p *Provider) buildDefaultPrompt(options providers.TranscriptionOptions) string {
+func (p *Provider) buildDefaultPrompt(_ providers.TranscriptionOptions) string {
 	prompt := "Please provide a complete, accurate, word-for-word transcription of the following audio. Include every word spoken, including filler words (um, uh, etc.), false starts, and repetitions. Maintain the speaker's original phrasing and word choice."
 
 	// Add appropriate punctuation and capitalization while preserving the natural speech patterns
