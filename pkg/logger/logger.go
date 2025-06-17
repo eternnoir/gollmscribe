@@ -19,11 +19,11 @@ type Logger struct {
 
 // Config represents logger configuration
 type Config struct {
-	Level      string `yaml:"level" mapstructure:"level"`           // debug, info, warn, error
-	Format     string `yaml:"format" mapstructure:"format"`         // json, console
-	Output     string `yaml:"output" mapstructure:"output"`         // stdout, stderr, file path
-	Timestamp  bool   `yaml:"timestamp" mapstructure:"timestamp"`   // include timestamp
-	Caller     bool   `yaml:"caller" mapstructure:"caller"`         // include caller info
+	Level      string `yaml:"level" mapstructure:"level"`             // debug, info, warn, error
+	Format     string `yaml:"format" mapstructure:"format"`           // json, console
+	Output     string `yaml:"output" mapstructure:"output"`           // stdout, stderr, file path
+	Timestamp  bool   `yaml:"timestamp" mapstructure:"timestamp"`     // include timestamp
+	Caller     bool   `yaml:"caller" mapstructure:"caller"`           // include caller info
 	PrettyMode bool   `yaml:"pretty_mode" mapstructure:"pretty_mode"` // enable pretty console output
 }
 
@@ -64,10 +64,10 @@ func Initialize(config *Config) error {
 		output = os.Stderr
 	default:
 		// File output
-		if err := os.MkdirAll(filepath.Dir(config.Output), 0755); err != nil {
+		if err := os.MkdirAll(filepath.Dir(config.Output), 0o755); err != nil {
 			return err
 		}
-		file, err := os.OpenFile(config.Output, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+		file, err := os.OpenFile(config.Output, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o666)
 		if err != nil {
 			return err
 		}
@@ -77,14 +77,15 @@ func Initialize(config *Config) error {
 	// Create base logger
 	var logger zerolog.Logger
 
-	if config.Format == "console" && config.PrettyMode {
+	switch {
+	case config.Format == "console" && config.PrettyMode:
 		// Pretty console output with colors
 		consoleWriter := zerolog.ConsoleWriter{
 			Out:        output,
 			TimeFormat: time.RFC3339,
 			NoColor:    false,
 		}
-		
+
 		// Custom level formatting with emojis and colors
 		consoleWriter.FormatLevel = func(i interface{}) string {
 			var l string
@@ -120,14 +121,14 @@ func Initialize(config *Config) error {
 		}
 
 		logger = zerolog.New(consoleWriter)
-	} else if config.Format == "console" {
+	case config.Format == "console":
 		// Simple console output without colors
 		logger = zerolog.New(zerolog.ConsoleWriter{
 			Out:        output,
 			TimeFormat: time.RFC3339,
 			NoColor:    true,
 		})
-	} else {
+	default:
 		// JSON output
 		logger = zerolog.New(output)
 	}

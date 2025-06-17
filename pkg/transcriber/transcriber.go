@@ -69,7 +69,7 @@ func (t *TranscriberImpl) TranscribeWithProgress(ctx context.Context, req *Trans
 		log.Error().Err(err).Msg("Failed to get audio info")
 		return nil, fmt.Errorf("failed to get audio info: %w", err)
 	}
-	
+
 	log.Info().
 		Dur("duration", audioInfo.Duration).
 		Bool("is_video", audioInfo.IsVideo).
@@ -240,7 +240,7 @@ func (t *TranscriberImpl) createChunks(audioPath string, options TranscribeOptio
 // transcribeChunks transcribes all chunks in parallel
 func (t *TranscriberImpl) transcribeChunks(ctx context.Context, chunks []*audio.ChunkInfo, req *TranscribeRequest, callback ProgressCallback) ([]*providers.TranscriptionResult, error) {
 	log := logger.WithComponent("chunk-processor").WithField("file", filepath.Base(req.FilePath))
-	
+
 	results := make([]*providers.TranscriptionResult, len(chunks))
 	var wg sync.WaitGroup
 	var mu sync.Mutex
@@ -309,7 +309,7 @@ func (t *TranscriberImpl) transcribeChunks(ctx context.Context, chunks []*audio.
 // transcribeChunk transcribes a single chunk
 func (t *TranscriberImpl) transcribeChunk(ctx context.Context, chunk *audio.ChunkInfo, req *TranscribeRequest) (*providers.TranscriptionResult, error) {
 	log := logger.WithComponent("chunk").WithField("temp_file", filepath.Base(chunk.TempFilePath))
-	
+
 	// Read chunk data
 	log.Debug().Msg("Opening chunk file")
 	chunkReader, err := t.reader.OpenAudio(chunk.TempFilePath)
@@ -375,9 +375,9 @@ func (t *TranscriberImpl) transcribeChunk(ctx context.Context, chunk *audio.Chun
 // saveResult saves the transcription result to file
 func (t *TranscriberImpl) saveResult(result *TranscribeResult, outputPath, format string) error {
 	log := logger.WithComponent("file-writer").WithField("output_path", outputPath)
-	
+
 	log.Debug().Str("format", format).Msg("Formatting transcription result")
-	
+
 	var content []byte
 	var err error
 

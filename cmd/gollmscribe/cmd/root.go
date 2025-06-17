@@ -46,7 +46,7 @@ func init() {
 	rootCmd.PersistentFlags().String("provider", "gemini", "LLM provider (gemini, openai)")
 	rootCmd.PersistentFlags().String("temp-dir", "", "temporary directory for processing")
 	rootCmd.PersistentFlags().Bool("verbose", false, "verbose output (deprecated, use --log-level debug)")
-	
+
 	// Logging flags
 	rootCmd.PersistentFlags().String("log-level", "info", "log level (trace, debug, info, warn, error)")
 	rootCmd.PersistentFlags().String("log-format", "console", "log format (console, json)")
@@ -59,7 +59,7 @@ func init() {
 	_ = viper.BindPFlag("provider", rootCmd.PersistentFlags().Lookup("provider"))
 	_ = viper.BindPFlag("temp_dir", rootCmd.PersistentFlags().Lookup("temp-dir"))
 	_ = viper.BindPFlag("verbose", rootCmd.PersistentFlags().Lookup("verbose"))
-	
+
 	// Bind logging flags to viper
 	_ = viper.BindPFlag("logging.level", rootCmd.PersistentFlags().Lookup("log-level"))
 	_ = viper.BindPFlag("logging.format", rootCmd.PersistentFlags().Lookup("log-format"))
@@ -107,18 +107,18 @@ func initConfig() {
 // initLogger initializes the logger based on configuration
 func initLogger() {
 	cfg := config.DefaultConfig()
-	
+
 	// Update logging config from viper
 	cfg.Logging.Level = viper.GetString("logging.level")
 	cfg.Logging.Format = viper.GetString("logging.format")
 	cfg.Logging.Output = viper.GetString("logging.output")
 	cfg.Logging.Caller = viper.GetBool("logging.caller")
-	
+
 	// Handle legacy verbose flag
 	if viper.GetBool("verbose") && cfg.Logging.Level == "info" {
 		cfg.Logging.Level = "debug"
 	}
-	
+
 	// Handle no-color flag
 	if viper.GetBool("logging.no_color") {
 		cfg.Logging.PrettyMode = false

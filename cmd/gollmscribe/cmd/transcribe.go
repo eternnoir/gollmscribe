@@ -84,7 +84,7 @@ func init() {
 
 func runTranscribe(cmd *cobra.Command, args []string) error {
 	log := logger.WithComponent("transcribe")
-	
+
 	log.Info().Int("file_count", len(args)).Strs("files", args).Msg("Starting transcription")
 
 	// Validate API key
@@ -131,11 +131,11 @@ func runTranscribe(cmd *cobra.Command, args []string) error {
 	// Process files
 	successCount := 0
 	failureCount := 0
-	
+
 	for _, filePath := range args {
 		fileLog := log.WithField("file", filepath.Base(filePath))
 		fileLog.Info().Msg("Processing file")
-		
+
 		if err := processFile(tr, filePath, options, customPrompt, cmd); err != nil {
 			fileLog.Error().Err(err).Msg("Failed to process file")
 			failureCount++
@@ -169,7 +169,7 @@ func loadConfig() *config.Config {
 
 func initializeProvider(cfg *config.Config) (*gemini.Provider, error) {
 	log := logger.WithComponent("provider")
-	
+
 	switch cfg.Provider.Name {
 	case "gemini":
 		// Use longer timeout for audio transcription
@@ -192,13 +192,13 @@ func initializeProvider(cfg *config.Config) (*gemini.Provider, error) {
 			gemini.WithTimeout(timeout),
 			gemini.WithRetries(cfg.Provider.Retries),
 		)
-		
+
 		log.Debug().Msg("Validating provider configuration")
 		if err := provider.ValidateConfig(); err != nil {
 			log.Error().Err(err).Msg("Provider validation failed")
 			return nil, fmt.Errorf("provider validation failed: %w", err)
 		}
-		
+
 		log.Info().Msg("Gemini provider initialized successfully")
 		return provider, nil
 	default:
@@ -249,9 +249,9 @@ func getCustomPrompt(cmd *cobra.Command) (string, error) {
 
 func processFile(tr transcriber.Transcriber, filePath string, options transcriber.TranscribeOptions, customPrompt string, cmd *cobra.Command) error {
 	log := logger.WithComponent("processor").WithField("file", filepath.Base(filePath))
-	
+
 	log.Debug().Str("full_path", filePath).Msg("Starting file processing")
-	
+
 	// Validate file exists
 	if _, err := os.Stat(filePath); os.IsNotExist(err) {
 		log.Error().Str("path", filePath).Msg("File does not exist")
@@ -321,7 +321,7 @@ func processFile(tr transcriber.Transcriber, filePath string, options transcribe
 
 	// Show results
 	duration := time.Since(startTime)
-	
+
 	log.Info().
 		Dur("duration", duration).
 		Dur("audio_duration", result.Duration).
@@ -331,7 +331,7 @@ func processFile(tr transcriber.Transcriber, filePath string, options transcribe
 		Str("provider", result.Provider).
 		Dur("processing_time", result.ProcessTime).
 		Msg("Transcription completed successfully")
-	
+
 	fmt.Printf("✓ Transcribed %s in %v\n", filepath.Base(filePath), duration.Round(time.Second))
 	fmt.Printf("  Output: %s\n", outputPath)
 	fmt.Printf("  Duration: %v\n", result.Duration.Round(time.Second))

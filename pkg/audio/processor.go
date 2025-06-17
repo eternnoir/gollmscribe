@@ -10,6 +10,7 @@ import (
 	"time"
 
 	ffmpeg "github.com/u2takey/ffmpeg-go"
+
 	"github.com/eternnoir/gollmscribe/pkg/logger"
 )
 
@@ -31,9 +32,9 @@ func NewProcessor(tempDir string) *ProcessorImpl {
 // GetAudioInfo extracts metadata from an audio/video file
 func (p *ProcessorImpl) GetAudioInfo(filePath string) (*AudioInfo, error) {
 	log := logger.WithComponent("audio-processor").WithField("file", filepath.Base(filePath))
-	
+
 	log.Debug().Str("full_path", filePath).Msg("Getting audio information")
-	
+
 	if !p.fileExists(filePath) {
 		log.Error().Str("path", filePath).Msg("File does not exist")
 		return nil, fmt.Errorf("file does not exist: %s", filePath)
@@ -74,13 +75,13 @@ func (p *ProcessorImpl) ConvertToAudio(inputPath, outputPath string, format Audi
 	log := logger.WithComponent("audio-converter").
 		WithField("input", filepath.Base(inputPath)).
 		WithField("output", filepath.Base(outputPath))
-	
+
 	log.Info().
 		Str("input_path", inputPath).
 		Str("output_path", outputPath).
 		Str("format", string(format)).
 		Msg("Starting audio conversion")
-	
+
 	if !p.fileExists(inputPath) {
 		log.Error().Str("path", inputPath).Msg("Input file does not exist")
 		return fmt.Errorf("input file does not exist: %s", inputPath)
@@ -131,7 +132,7 @@ func (p *ProcessorImpl) ConvertToAudio(inputPath, outputPath string, format Audi
 	startTime := time.Now()
 	err := stream.OverWriteOutput().ErrorToStdOut().Run()
 	duration := time.Since(startTime)
-	
+
 	if err != nil {
 		log.Error().Err(err).Dur("duration", duration).Msg("FFmpeg conversion failed")
 		return fmt.Errorf("ffmpeg conversion failed: %w", err)
