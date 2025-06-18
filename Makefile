@@ -99,7 +99,12 @@ vet:
 # Lint code (requires golangci-lint)
 .PHONY: lint
 lint:
-	golangci-lint run
+	golangci-lint run --timeout=5m
+
+# Check code quality (format, vet, lint)
+.PHONY: check
+check: fmt vet lint
+	@echo "All code quality checks passed!"
 
 # Download dependencies
 .PHONY: deps
@@ -154,6 +159,7 @@ help:
 	@echo "  make fmt          - Format code"
 	@echo "  make vet          - Vet code"
 	@echo "  make lint         - Run linter (requires golangci-lint)"
+	@echo "  make check        - Run all code quality checks (fmt, vet, lint)"
 	@echo "  make deps         - Download dependencies"
 	@echo "  make tidy         - Tidy dependencies"
 	@echo "  make clean        - Clean build artifacts"

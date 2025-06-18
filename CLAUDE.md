@@ -16,30 +16,37 @@ Please review and update these documents as the project evolves.
 
 ## Development Commands
 
-Since the Makefile is empty, use standard Go commands:
+Use the Makefile targets for development tasks:
 
 ```bash
 # Build the application
-go build -o gollmscribe ./cmd/gollmscribe
+make build
 
 # Run tests
-go test ./...
+make test
 
 # Run tests with coverage
-go test -cover ./...
+make test-coverage
 
-# Run specific test
-go test -run TestName ./...
+# Code quality checks (MUST run after code changes)
+make check  # Runs fmt, vet, and lint
 
-# Install the binary
-go install ./cmd/gollmscribe
+# Individual quality checks
+make fmt    # Format code
+make vet    # Vet code
+make lint   # Run linter
 
-# Format code
-go fmt ./...
+# Build for all platforms
+make build-all
 
-# Vet code
-go vet ./...
+# Clean build artifacts
+make clean
+
+# Show all available targets
+make help
 ```
+
+**IMPORTANT**: Always run `make check` after making code changes to ensure code quality and prevent CI failures. This runs all the same linting checks as the GitHub Actions workflow.
 
 ## Architecture
 
