@@ -49,6 +49,7 @@ build/
 *.log
 *.tmp
 .gollmscribe.yaml
+.gollmscribe-watch.db
 
 # Development files
 /.development/

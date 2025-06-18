@@ -47,3 +47,17 @@ output:
   filename: ""                      # Output filename pattern
   include_metadata: true            # Include processing metadata
   pretty_print: true               # Pretty-print JSON output
+
+# Watch Folder Configuration
+watch:
+  patterns: ["*.mp3", "*.wav", "*.mp4", "*.m4a"]  # File patterns to watch
+  recursive: false                  # Watch subdirectories recursively
+  interval: 5s                      # Polling interval for missed files
+  stability_wait: 2s                # Wait time for file stability
+  processing_timeout: 30m           # Maximum time to process a single file
+  max_workers: 3                    # Maximum concurrent workers
+  output_dir: ""                    # Output directory for transcriptions
+  move_to: ""                       # Move processed files to this directory
+  history_db: ".gollmscribe-watch.db"  # Path to processing history database
+  process_existing: true            # Process existing files on startup
+  retry_failed: false               # Retry previously failed files

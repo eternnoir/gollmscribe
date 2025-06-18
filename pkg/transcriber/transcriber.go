@@ -43,6 +43,13 @@ func NewTranscriber(provider providers.LLMProvider, cfg *config.Config) *Transcr
 	}
 }
 
+// NewTranscriberWithOptions creates a new transcriber with default options
+func NewTranscriberWithOptions(provider providers.LLMProvider, cfg *config.Config, defaultOptions TranscribeOptions) *TranscriberImpl {
+	t := NewTranscriber(provider, cfg)
+	// Store default options if needed in the future
+	return t
+}
+
 // Transcribe processes a single audio/video file
 func (t *TranscriberImpl) Transcribe(ctx context.Context, req *TranscribeRequest) (*TranscribeResult, error) {
 	return t.TranscribeWithProgress(ctx, req, nil)

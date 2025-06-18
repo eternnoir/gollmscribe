@@ -21,6 +21,8 @@ A Go application that transforms audio files into precise text transcripts using
 - **Concurrent Processing**: Efficient parallel processing of audio chunks for faster transcription
 - **Custom Prompts**: Use specialized prompts for different content types (meetings, interviews, lectures)
 - **Prompt-driven Features**: Control output format, speaker identification, timestamps, and more through intelligent prompts
+- **Watch Folder**: Automatically monitor directories for new audio/video files and transcribe them in real-time
+- **Batch Processing**: Process existing files or watch for new ones with shared configuration and prompts
 - **Configurable**: Comprehensive configuration options via YAML or environment variables
 
 ## 🚀 Installation
@@ -98,6 +100,49 @@ gollmscribe transcribe *.mp3
 # Adjust processing settings
 gollmscribe transcribe --workers 5 --temperature 0.2 conference.mp4
 ```
+
+#### Watch Folder Mode
+
+Monitor a directory for new audio/video files and automatically transcribe them:
+
+```bash
+# Watch current directory
+gollmscribe watch .
+
+# Watch with custom prompt for all files
+gollmscribe watch ./recordings -p "Transcribe and identify speakers"
+
+# Watch recursively with file movement
+gollmscribe watch ./inbox -r --move-to ./processed
+
+# Watch with custom output directory
+gollmscribe watch ./meetings --output-dir ./transcripts
+
+# Process existing files once and exit
+gollmscribe watch ./batch --once
+
+# Watch specific file types
+gollmscribe watch ./audio --pattern "*.mp3,*.m4a"
+
+# Advanced watch options
+gollmscribe watch ./monitor \
+  --recursive \
+  --max-workers 5 \
+  --chunk-minutes 20 \
+  --processing-timeout 45m \
+  --stability-wait 5s \
+  --move-to ./completed \
+  --output-dir ./transcripts
+```
+
+**Watch Mode Features:**
+- **Real-time monitoring**: Detects new files as they're added
+- **Shared configuration**: All files in a watch session use the same prompt and settings
+- **Deduplication**: Prevents processing the same file multiple times using content hashing
+- **Crash recovery**: Cleans up stale processing markers from interrupted sessions
+- **Cross-filesystem moves**: Handles moving files across different disk partitions
+- **Concurrent processing**: Multiple files processed simultaneously with configurable worker limits
+- **Progress tracking**: Real-time status updates and statistics
 
 ### Prompt Examples for Different Use Cases
 
@@ -177,6 +222,17 @@ transcribe:
     meeting: "Please transcribe this meeting recording, identify each speaker..."
     interview: "Please transcribe this interview, clearly distinguishing..."
     lecture: "Please transcribe this educational content..."
+
+watch:
+  patterns: ["*.mp3", "*.wav", "*.mp4", "*.m4a"]
+  recursive: false
+  interval: 5s
+  stability_wait: 2s
+  processing_timeout: 30m
+  max_workers: 3
+  output_dir: ""
+  move_to: ""
+  history_db: ".gollmscribe-watch.db"
 ```
 
 See [.gollmscribe.yaml.example](.gollmscribe.yaml.example) for all available options.
@@ -260,7 +316,8 @@ gollmscribe/
 │   ├── config/             # Configuration management
 │   ├── providers/          # LLM provider implementations
 │   │   └── gemini/         # Google Gemini provider
-│   └── transcriber/        # Core transcription logic
+│   ├── transcriber/        # Core transcription logic
+│   └── watcher/            # File watching and batch processing
 ├── examples/               # Usage examples
 └── testdata/              # Test files
 ```

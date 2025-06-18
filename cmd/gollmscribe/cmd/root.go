@@ -25,8 +25,10 @@ Features:
 - Automatic video to audio conversion
 - Intelligent chunking with overlap for long audio files
 - Custom transcription prompts for different use cases
-- Batch processing support`,
-	Version: "1.0.0",
+- Batch processing support
+- Watch folder functionality for automatic processing
+- Real-time directory monitoring and concurrent processing`,
+	Version: "0.2.0",
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.

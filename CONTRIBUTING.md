@@ -128,7 +128,8 @@ gollmscribe/
 │   ├── audio/          # Audio processing
 │   ├── config/         # Configuration
 │   ├── providers/      # LLM providers
-│   └── transcriber/    # Core transcription logic
+│   ├── transcriber/    # Core transcription logic
+│   └── watcher/        # File watching and batch processing
 ├── examples/           # Usage examples
 └── testdata/          # Test files
 ```
