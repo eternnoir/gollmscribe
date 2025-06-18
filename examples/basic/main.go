@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 
+	"github.com/eternnoir/gollmscribe/pkg/config"
 	"github.com/eternnoir/gollmscribe/pkg/providers/gemini"
 	"github.com/eternnoir/gollmscribe/pkg/transcriber"
 )
@@ -29,16 +30,20 @@ func main() {
 		log.Fatalf("Provider configuration error: %v", err)
 	}
 
+	// Create config
+	cfg := config.DefaultConfig()
+	cfg.Provider.APIKey = apiKey
+
 	// Initialize transcriber
-	tr := transcriber.NewTranscriber(provider, "")
+	tr := transcriber.NewTranscriber(provider, cfg)
 
 	// Create transcription request
 	req := &transcriber.TranscribeRequest{
 		FilePath:     inputFile,
 		CustomPrompt: "Please provide a complete transcription with speaker identification and timestamps.",
 		Options: transcriber.TranscribeOptions{
-			ChunkMinutes:   30,
-			OverlapSeconds: 60,
+			ChunkMinutes:   15,
+			OverlapSeconds: 30,
 			Workers:        3,
 			Temperature:    0.1,
 		},

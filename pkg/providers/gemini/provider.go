@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/eternnoir/gollmscribe/pkg/logger"
 	"github.com/eternnoir/gollmscribe/pkg/providers"
 )
 
@@ -235,7 +236,16 @@ func (p *Provider) makeRequest(ctx context.Context, req *GeminiRequest) (*Gemini
 		return nil, fmt.Errorf("failed to marshal request: %w", err)
 	}
 
-	url := fmt.Sprintf("%s/%s/models/%s:generateContent?key=%s", p.baseURL, apiVersion, p.model, p.apiKey)
+	// Log request details (without API key)
+	url := fmt.Sprintf("%s/%s/models/%s:generateContent", p.baseURL, apiVersion, p.model)
+	logger.Debug().
+		Str("component", "gemini-provider").
+		Str("url", url).
+		Str("model", p.model).
+		Int("request_size", len(jsonData)).
+		Msg("Sending request to Gemini API")
+
+	url = fmt.Sprintf("%s/%s/models/%s:generateContent?key=%s", p.baseURL, apiVersion, p.model, p.apiKey)
 
 	httpReq, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewBuffer(jsonData))
 	if err != nil {
@@ -261,10 +271,22 @@ func (p *Provider) makeRequest(ctx context.Context, req *GeminiRequest) (*Gemini
 		return nil, fmt.Errorf("API request failed with status %d: %s", httpResp.StatusCode, string(respData))
 	}
 
+	// Log raw response for debugging
+	logger.Debug().
+		Str("component", "gemini-provider").
+		Str("raw_response", string(respData)).
+		Msg("Received raw response from Gemini API")
+
 	var geminiResp GeminiResponse
 	if err := json.Unmarshal(respData, &geminiResp); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
 	}
+
+	// Log parsed response structure
+	logger.Debug().
+		Str("component", "gemini-provider").
+		Int("candidates_count", len(geminiResp.Candidates)).
+		Msg("Parsed Gemini response")
 
 	if geminiResp.Error != nil {
 		return nil, fmt.Errorf("API error %d: %s", geminiResp.Error.Code, geminiResp.Error.Message)
@@ -280,7 +302,21 @@ func (p *Provider) parseResponse(resp *GeminiResponse, chunk *providers.AudioChu
 	}
 
 	candidate := resp.Candidates[0]
+
+	// Log candidate details for debugging
+	logger.Debug().
+		Str("component", "gemini-provider").
+		Str("finish_reason", candidate.FinishReason).
+		Int("content_parts", len(candidate.Content.Parts)).
+		Msg("Processing candidate")
+
 	if len(candidate.Content.Parts) == 0 {
+		// Log the entire candidate structure for debugging
+		candidateJSON, _ := json.Marshal(candidate)
+		logger.Error().
+			Str("component", "gemini-provider").
+			Str("candidate_json", string(candidateJSON)).
+			Msg("No content parts in candidate")
 		return nil, fmt.Errorf("no content parts in response")
 	}
 
@@ -291,7 +327,7 @@ func (p *Provider) parseResponse(resp *GeminiResponse, chunk *providers.AudioChu
 		Text:    strings.TrimSpace(responseText),
 		Metadata: map[string]interface{}{
 			"provider": "gemini",
-			"model":    modelName,
+			"model":    p.model, // Use the actual model being used
 		},
 	}
 

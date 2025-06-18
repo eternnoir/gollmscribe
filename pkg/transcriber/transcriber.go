@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/eternnoir/gollmscribe/pkg/audio"
+	"github.com/eternnoir/gollmscribe/pkg/config"
 	"github.com/eternnoir/gollmscribe/pkg/logger"
 	"github.com/eternnoir/gollmscribe/pkg/providers"
 )
@@ -21,10 +22,12 @@ type TranscriberImpl struct {
 	reader    audio.Reader
 	merger    ChunkMerger
 	tempDir   string
+	config    *config.Config
 }
 
 // NewTranscriber creates a new transcriber instance
-func NewTranscriber(provider providers.LLMProvider, tempDir string) *TranscriberImpl {
+func NewTranscriber(provider providers.LLMProvider, cfg *config.Config) *TranscriberImpl {
+	tempDir := cfg.Audio.TempDir
 	if tempDir == "" {
 		tempDir = os.TempDir()
 	}
@@ -36,6 +39,7 @@ func NewTranscriber(provider providers.LLMProvider, tempDir string) *Transcriber
 		reader:    audio.NewReader(tempDir),
 		merger:    NewChunkMerger(),
 		tempDir:   tempDir,
+		config:    cfg,
 	}
 }
 
@@ -329,8 +333,8 @@ func (t *TranscriberImpl) transcribeChunk(ctx context.Context, chunk *audio.Chun
 		Prompt:      req.CustomPrompt,
 		Options: providers.TranscriptionOptions{
 			Temperature:    req.Options.Temperature,
-			MaxTokens:      65535,
-			TimeoutSeconds: 300,
+			MaxTokens:      t.config.Provider.MaxTokens,
+			TimeoutSeconds: int(t.config.Provider.Timeout.Seconds()),
 		},
 	}
 

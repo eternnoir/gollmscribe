@@ -57,8 +57,8 @@ func init() {
 	transcribeCmd.Flags().String("prompt-file", "", "file containing custom prompt")
 
 	// Processing options
-	transcribeCmd.Flags().Int("chunk-minutes", 30, "chunk duration in minutes")
-	transcribeCmd.Flags().Int("overlap-seconds", 60, "overlap duration in seconds")
+	transcribeCmd.Flags().Int("chunk-minutes", 15, "chunk duration in minutes")
+	transcribeCmd.Flags().Int("overlap-seconds", 30, "overlap duration in seconds")
 	transcribeCmd.Flags().Int("workers", 3, "number of concurrent workers")
 	transcribeCmd.Flags().Float32("temperature", 0.1, "LLM temperature (0.0-1.0)")
 
@@ -99,15 +99,11 @@ func runTranscribe(cmd *cobra.Command, args []string) error {
 	log.Info().Str("provider", cfg.Provider.Name).Msg("Initialized LLM provider")
 
 	// Initialize transcriber
-	tempDir := viper.GetString("temp_dir")
-	if tempDir == "" {
-		tempDir = os.TempDir()
-	}
-	log.Debug().Str("temp_dir", tempDir).Msg("Using temporary directory")
-	tr := transcriber.NewTranscriber(provider, tempDir)
+	log.Debug().Str("temp_dir", cfg.Audio.TempDir).Msg("Using temporary directory")
+	tr := transcriber.NewTranscriber(provider, cfg)
 
 	// Get transcription options
-	options := getTranscribeOptions(cmd)
+	options := getTranscribeOptions(cmd, cfg)
 	log.Debug().Interface("options", options).Msg("Transcription options configured")
 
 	// Get custom prompt
@@ -199,11 +195,28 @@ func initializeProvider(cfg *config.Config) (*gemini.Provider, error) {
 	}
 }
 
-func getTranscribeOptions(cmd *cobra.Command) transcriber.TranscribeOptions {
+func getTranscribeOptions(cmd *cobra.Command, cfg *config.Config) transcriber.TranscribeOptions {
+	// Use config defaults, but allow CLI flags to override
 	chunkMinutes, _ := cmd.Flags().GetInt("chunk-minutes")
+	if !cmd.Flags().Changed("chunk-minutes") {
+		chunkMinutes = cfg.Audio.ChunkMinutes
+	}
+	
 	overlapSeconds, _ := cmd.Flags().GetInt("overlap-seconds")
+	if !cmd.Flags().Changed("overlap-seconds") {
+		overlapSeconds = cfg.Audio.OverlapSeconds
+	}
+	
 	workers, _ := cmd.Flags().GetInt("workers")
+	if !cmd.Flags().Changed("workers") {
+		workers = cfg.Audio.Workers
+	}
+	
 	temperature, _ := cmd.Flags().GetFloat32("temperature")
+	if !cmd.Flags().Changed("temperature") {
+		temperature = cfg.Provider.Temperature
+	}
+	
 	preserveAudio, _ := cmd.Flags().GetBool("preserve-audio")
 
 	return transcriber.TranscribeOptions{

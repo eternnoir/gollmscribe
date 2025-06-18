@@ -85,14 +85,14 @@ func DefaultConfig() *Config {
 	return &Config{
 		Provider: ProviderConfig{
 			Name:        "gemini",
-			Timeout:     30 * time.Second,
+			Timeout:     300 * time.Second,
 			Retries:     3,
 			Temperature: 0.1,
 			MaxTokens:   65535,
 		},
 		Audio: AudioConfig{
-			ChunkMinutes:   30,
-			OverlapSeconds: 60,
+			ChunkMinutes:   15,
+			OverlapSeconds: 30,
 			OutputFormat:   "mp3",
 			SampleRate:     44100,
 			Quality:        5,

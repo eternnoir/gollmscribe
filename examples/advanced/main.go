@@ -33,7 +33,7 @@ func main() {
 	}
 
 	// Initialize transcriber
-	tr := transcriber.NewTranscriber(provider, cfg.Audio.TempDir)
+	tr := transcriber.NewTranscriber(provider, cfg)
 
 	// Process files
 	if len(inputFiles) == 1 {
