@@ -201,22 +201,22 @@ func getTranscribeOptions(cmd *cobra.Command, cfg *config.Config) transcriber.Tr
 	if !cmd.Flags().Changed("chunk-minutes") {
 		chunkMinutes = cfg.Audio.ChunkMinutes
 	}
-	
+
 	overlapSeconds, _ := cmd.Flags().GetInt("overlap-seconds")
 	if !cmd.Flags().Changed("overlap-seconds") {
 		overlapSeconds = cfg.Audio.OverlapSeconds
 	}
-	
+
 	workers, _ := cmd.Flags().GetInt("workers")
 	if !cmd.Flags().Changed("workers") {
 		workers = cfg.Audio.Workers
 	}
-	
+
 	temperature, _ := cmd.Flags().GetFloat32("temperature")
 	if !cmd.Flags().Changed("temperature") {
 		temperature = cfg.Provider.Temperature
 	}
-	
+
 	preserveAudio, _ := cmd.Flags().GetBool("preserve-audio")
 
 	return transcriber.TranscribeOptions{
