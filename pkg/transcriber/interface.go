@@ -17,11 +17,12 @@ type TranscribeRequest struct {
 
 // TranscribeOptions provides configuration for the transcription process
 type TranscribeOptions struct {
-	ChunkMinutes   int // Default: 30
-	OverlapSeconds int // Default: 60
-	Workers        int // Default: 3
-	Temperature    float32
-	PreserveAudio  bool // Keep temporary audio files
+	ChunkMinutes     int // Default: 30
+	OverlapSeconds   int // Default: 60
+	Workers          int // Default: 3
+	Temperature      float32
+	PreserveAudio    bool   // Keep temporary audio files
+	VoiceProfilesDir string // Directory containing voice profile audio files for speaker identification
 }
 
 // TranscribeResult represents the complete transcription result

@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"time"
 
 	"github.com/spf13/viper"
 )
@@ -221,13 +220,4 @@ func GetFromEnv() map[string]interface{} {
 	}
 
 	return overrides
-}
-
-// Helper function to parse duration from string
-func parseDuration(s string) time.Duration {
-	d, err := time.ParseDuration(s)
-	if err != nil {
-		return 0
-	}
-	return d
 }

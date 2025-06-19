@@ -45,7 +45,10 @@ Examples:
   gollmscribe watch ./batch --once
 
   # Watch specific file types
-  gollmscribe watch ./audio --pattern "*.mp3,*.m4a"`,
+  gollmscribe watch ./audio --pattern "*.mp3,*.m4a"
+  
+  # Watch with voice profiles for speaker identification
+  gollmscribe watch ./meetings --voice-profiles ./speaker-intros/`,
 	Args: cobra.ExactArgs(1),
 	RunE: runWatch,
 }
@@ -81,6 +84,9 @@ func init() {
 	watchCmd.Flags().Int("overlap-seconds", 30, "overlap duration in seconds")
 	watchCmd.Flags().Float32("temperature", 0.1, "LLM temperature (0.0-1.0)")
 	watchCmd.Flags().Bool("preserve-audio", false, "keep temporary audio files")
+
+	// Voice profile options
+	watchCmd.Flags().String("voice-profiles", "", "directory containing voice profile audio files for speaker identification")
 
 	// Bind flags to viper
 	_ = viper.BindPFlag("watch.pattern", watchCmd.Flags().Lookup("pattern"))
@@ -298,16 +304,18 @@ func getWatchTranscribeOptions(cmd *cobra.Command, cfg *config.Config) transcrib
 	}
 
 	preserveAudio, _ := cmd.Flags().GetBool("preserve-audio")
+	voiceProfilesDir, _ := cmd.Flags().GetString("voice-profiles")
 
 	// Use max workers from watch config
 	workers, _ := cmd.Flags().GetInt("max-workers")
 
 	return transcriber.TranscribeOptions{
-		ChunkMinutes:   chunkMinutes,
-		OverlapSeconds: overlapSeconds,
-		Workers:        workers,
-		Temperature:    temperature,
-		PreserveAudio:  preserveAudio,
+		ChunkMinutes:     chunkMinutes,
+		OverlapSeconds:   overlapSeconds,
+		Workers:          workers,
+		Temperature:      temperature,
+		PreserveAudio:    preserveAudio,
+		VoiceProfilesDir: voiceProfilesDir,
 	}
 }
 

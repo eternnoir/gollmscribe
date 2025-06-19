@@ -153,20 +153,86 @@ func (p *Provider) Name() string {
 	return "gemini"
 }
 
-// Transcribe transcribes audio using Gemini API
+// Transcribe transcribes audio using Gemini API with support for multiple audio files
 func (p *Provider) Transcribe(ctx context.Context, req *providers.TranscriptionRequest) (*providers.TranscriptionResult, error) {
+	// Build the prompt
+	prompt := req.Prompt
+	if prompt == "" {
+		prompt = p.buildDefaultPrompt(req.Options)
+	}
+
+	// Prepare parts for the request
+	var parts []Part
+
+	// Add prompt text first
+	parts = append(parts, Part{
+		Text: prompt,
+	})
+
+	// Add additional audio files (intro/voice profiles) first if they exist
+	for _, audioFile := range req.AdditionalAudio {
+		audioData, err := io.ReadAll(audioFile.Data)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read additional audio data: %w", err)
+		}
+
+		parts = append(parts, Part{
+			InlineData: &InlineData{
+				MimeType: audioFile.MimeType,
+				Data:     base64.StdEncoding.EncodeToString(audioData),
+			},
+		})
+	}
+
+	// Add main audio file
 	audioData, err := io.ReadAll(req.Audio)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read audio data: %w", err)
+		return nil, fmt.Errorf("failed to read main audio data: %w", err)
 	}
 
-	chunk := &providers.AudioChunk{
-		Data:     audioData,
-		Format:   req.AudioFormat,
-		MimeType: req.MimeType,
+	parts = append(parts, Part{
+		InlineData: &InlineData{
+			MimeType: req.MimeType,
+			Data:     base64.StdEncoding.EncodeToString(audioData),
+		},
+	})
+
+	// Prepare the request
+	geminiReq := &GeminiRequest{
+		Contents: []Content{
+			{
+				Parts: parts,
+				Role:  "user",
+			},
+		},
+		GenerationConfig: &GenerationConfig{
+			Temperature:      req.Options.Temperature,
+			MaxOutputTokens:  req.Options.MaxTokens,
+			ResponseMimeType: "text/plain",
+			ThinkingConfig: &ThinkingConfig{
+				ThinkingBudget: -1,
+			},
+		},
 	}
 
-	return p.TranscribeChunk(ctx, chunk, req.Prompt, req.Options)
+	// Make the API request with retries
+	var resp *GeminiResponse
+	for attempt := 0; attempt <= p.retries; attempt++ {
+		resp, err = p.makeRequest(ctx, geminiReq)
+		if err == nil {
+			break
+		}
+		if attempt < p.retries {
+			time.Sleep(time.Duration(attempt+1) * time.Second)
+		}
+	}
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to make API request after %d attempts: %w", p.retries+1, err)
+	}
+
+	// Parse the response
+	return p.parseResponseText(resp)
 }
 
 // TranscribeChunk transcribes a single audio chunk
@@ -328,6 +394,48 @@ func (p *Provider) parseResponse(resp *GeminiResponse, chunk *providers.AudioChu
 		Metadata: map[string]interface{}{
 			"provider": "gemini",
 			"model":    p.model, // Use the actual model being used
+		},
+	}
+
+	if result.Text == "" {
+		return nil, fmt.Errorf("empty transcription result")
+	}
+
+	return result, nil
+}
+
+// parseResponseText parses the Gemini API response for text-only results
+func (p *Provider) parseResponseText(resp *GeminiResponse) (*providers.TranscriptionResult, error) {
+	if len(resp.Candidates) == 0 {
+		return nil, fmt.Errorf("no candidates in response")
+	}
+
+	candidate := resp.Candidates[0]
+
+	// Log candidate details for debugging
+	logger.Debug().
+		Str("component", "gemini-provider").
+		Str("finish_reason", candidate.FinishReason).
+		Int("content_parts", len(candidate.Content.Parts)).
+		Msg("Processing candidate")
+
+	if len(candidate.Content.Parts) == 0 {
+		// Log the entire candidate structure for debugging
+		candidateJSON, _ := json.Marshal(candidate)
+		logger.Error().
+			Str("component", "gemini-provider").
+			Str("candidate_json", string(candidateJSON)).
+			Msg("No content parts in candidate")
+		return nil, fmt.Errorf("no content parts in response")
+	}
+
+	responseText := candidate.Content.Parts[0].Text
+
+	result := &providers.TranscriptionResult{
+		Text: strings.TrimSpace(responseText),
+		Metadata: map[string]interface{}{
+			"provider": "gemini",
+			"model":    p.model,
 		},
 	}
 

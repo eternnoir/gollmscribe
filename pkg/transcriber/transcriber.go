@@ -16,13 +16,14 @@ import (
 
 // TranscriberImpl implements the Transcriber interface
 type TranscriberImpl struct {
-	provider  providers.LLMProvider
-	processor audio.Processor
-	chunker   audio.Chunker
-	reader    audio.Reader
-	merger    ChunkMerger
-	tempDir   string
-	config    *config.Config
+	provider              providers.LLMProvider
+	processor             audio.Processor
+	chunker               audio.Chunker
+	reader                audio.Reader
+	merger                ChunkMerger
+	voiceProfileProcessor *audio.VoiceProfileProcessor
+	tempDir               string
+	config                *config.Config
 }
 
 // NewTranscriber creates a new transcriber instance
@@ -32,14 +33,17 @@ func NewTranscriber(provider providers.LLMProvider, cfg *config.Config) *Transcr
 		tempDir = os.TempDir()
 	}
 
+	processor := audio.NewProcessor(tempDir)
+
 	return &TranscriberImpl{
-		provider:  provider,
-		processor: audio.NewProcessor(tempDir),
-		chunker:   audio.NewChunker(tempDir),
-		reader:    audio.NewReader(tempDir),
-		merger:    NewChunkMerger(),
-		tempDir:   tempDir,
-		config:    cfg,
+		provider:              provider,
+		processor:             processor,
+		chunker:               audio.NewChunker(tempDir),
+		reader:                audio.NewReader(tempDir),
+		merger:                NewChunkMerger(),
+		voiceProfileProcessor: audio.NewVoiceProfileProcessor(processor, tempDir),
+		tempDir:               tempDir,
+		config:                cfg,
 	}
 }
 
@@ -104,6 +108,43 @@ func (t *TranscriberImpl) TranscribeWithProgress(ctx context.Context, req *Trans
 		}()
 	}
 
+	// Process voice profiles if provided
+	var voiceProfileResult *audio.VoiceProfileResult
+	if req.Options.VoiceProfilesDir != "" {
+		log.Info().Str("voice_profiles_dir", req.Options.VoiceProfilesDir).Msg("Processing voice profiles for speaker identification")
+
+		voiceProfileOptions := audio.VoiceProfileOptions{
+			TempDir:        t.tempDir,
+			OutputFormat:   audio.FormatMP3,
+			SilencePadding: 2 * time.Second, // 2 seconds silence between profiles
+			KeepTemp:       req.Options.PreserveAudio,
+		}
+
+		voiceProfileResult, err = t.voiceProfileProcessor.ProcessVoiceProfiles(req.Options.VoiceProfilesDir, voiceProfileOptions)
+		if err != nil {
+			log.Error().Err(err).Msg("Voice profile processing failed")
+			return nil, fmt.Errorf("voice profile processing failed: %w", err)
+		}
+
+		if voiceProfileResult.ProfileCount > 0 {
+			log.Info().
+				Int("profile_count", voiceProfileResult.ProfileCount).
+				Dur("total_duration", voiceProfileResult.TotalDuration).
+				Str("merged_file", filepath.Base(voiceProfileResult.MergedFilePath)).
+				Msg("Voice profiles processed successfully - will be sent separately with each chunk")
+		} else {
+			log.Info().Msg("No voice profiles found, proceeding with original audio")
+		}
+
+		// Clean up voice profile files if not preserving
+		if !req.Options.PreserveAudio && voiceProfileResult != nil {
+			defer func() {
+				log.Debug().Msg("Cleaning up voice profile files")
+				_ = t.voiceProfileProcessor.Cleanup(voiceProfileResult)
+			}()
+		}
+	}
+
 	// Create audio chunks
 	log.Info().
 		Int("chunk_minutes", req.Options.ChunkMinutes).
@@ -127,7 +168,7 @@ func (t *TranscriberImpl) TranscribeWithProgress(ctx context.Context, req *Trans
 		Int("workers", req.Options.Workers).
 		Int("chunks", len(chunks)).
 		Msg("Starting parallel chunk transcription")
-	results, err := t.transcribeChunks(ctx, chunks, req, callback)
+	results, err := t.transcribeChunks(ctx, chunks, req, voiceProfileResult, callback)
 	if err != nil {
 		log.Error().Err(err).Msg("Chunk transcription failed")
 		return nil, fmt.Errorf("chunk transcription failed: %w", err)
@@ -248,7 +289,7 @@ func (t *TranscriberImpl) createChunks(audioPath string, options TranscribeOptio
 }
 
 // transcribeChunks transcribes all chunks in parallel
-func (t *TranscriberImpl) transcribeChunks(ctx context.Context, chunks []*audio.ChunkInfo, req *TranscribeRequest, callback ProgressCallback) ([]*providers.TranscriptionResult, error) {
+func (t *TranscriberImpl) transcribeChunks(ctx context.Context, chunks []*audio.ChunkInfo, req *TranscribeRequest, voiceProfileResult *audio.VoiceProfileResult, callback ProgressCallback) ([]*providers.TranscriptionResult, error) {
 	log := logger.WithComponent("chunk-processor").WithField("file", filepath.Base(req.FilePath))
 
 	results := make([]*providers.TranscriptionResult, len(chunks))
@@ -281,7 +322,7 @@ func (t *TranscriberImpl) transcribeChunks(ctx context.Context, chunks []*audio.
 				Msg("Starting chunk transcription")
 
 			// Transcribe chunk
-			result, err := t.transcribeChunk(ctx, chunkInfo, req)
+			result, err := t.transcribeChunk(ctx, chunkInfo, req, voiceProfileResult)
 
 			mu.Lock()
 			if err != nil {
@@ -316,8 +357,8 @@ func (t *TranscriberImpl) transcribeChunks(ctx context.Context, chunks []*audio.
 	return results, nil
 }
 
-// transcribeChunk transcribes a single chunk
-func (t *TranscriberImpl) transcribeChunk(ctx context.Context, chunk *audio.ChunkInfo, req *TranscribeRequest) (*providers.TranscriptionResult, error) {
+// transcribeChunk transcribes a single chunk with optional voice profiles
+func (t *TranscriberImpl) transcribeChunk(ctx context.Context, chunk *audio.ChunkInfo, req *TranscribeRequest, voiceProfileResult *audio.VoiceProfileResult) (*providers.TranscriptionResult, error) {
 	log := logger.WithComponent("chunk").WithField("temp_file", filepath.Base(chunk.TempFilePath))
 
 	// Read chunk data
@@ -343,6 +384,28 @@ func (t *TranscriberImpl) transcribeChunk(ctx context.Context, chunk *audio.Chun
 			MaxTokens:      t.config.Provider.MaxTokens,
 			TimeoutSeconds: int(t.config.Provider.Timeout.Seconds()),
 		},
+	}
+
+	// Add voice profile as additional audio if available
+	if voiceProfileResult != nil && voiceProfileResult.MergedFilePath != "" {
+		log.Debug().Str("voice_profile", filepath.Base(voiceProfileResult.MergedFilePath)).Msg("Adding voice profile to chunk transcription")
+
+		voiceProfileReader, err := t.reader.OpenAudio(voiceProfileResult.MergedFilePath)
+		if err != nil {
+			log.Warn().Err(err).Msg("Failed to open voice profile file, proceeding without it")
+		} else {
+			transcReq.AdditionalAudio = []providers.AudioFile{
+				{
+					Data:     voiceProfileReader,
+					Format:   "mp3",
+					MimeType: "audio/mpeg",
+					Filename: filepath.Base(voiceProfileResult.MergedFilePath),
+				},
+			}
+			defer func() {
+				_ = voiceProfileReader.Close()
+			}()
+		}
 	}
 
 	log.Debug().
@@ -375,6 +438,9 @@ func (t *TranscriberImpl) transcribeChunk(ctx context.Context, chunk *audio.Chun
 
 	return result, nil
 }
+
+// NOTE: Audio combination methods removed - now using separate file upload to Gemini
+// Voice profiles are sent as additional audio files with each chunk
 
 // saveResult saves the transcription result to file
 func (t *TranscriberImpl) saveResult(result *TranscribeResult, outputPath, format string) error {

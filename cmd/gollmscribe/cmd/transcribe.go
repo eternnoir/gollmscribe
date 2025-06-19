@@ -41,7 +41,10 @@ Examples:
   gollmscribe transcribe *.wav --chunk-minutes 20 --overlap-seconds 45
 
   # Transcribe with prompt file
-  gollmscribe transcribe interview.mp3 --prompt-file my-prompt.txt`,
+  gollmscribe transcribe interview.mp3 --prompt-file my-prompt.txt
+  
+  # Transcribe with voice profiles for speaker identification
+  gollmscribe transcribe meeting.wav --voice-profiles ./speaker-intros/`,
 	Args: cobra.MinimumNArgs(1),
 	RunE: runTranscribe,
 }
@@ -65,6 +68,9 @@ func init() {
 	// Advanced options
 	transcribeCmd.Flags().Bool("preserve-audio", false, "keep temporary audio files")
 	transcribeCmd.Flags().Bool("progress", true, "show progress during transcription")
+
+	// Voice profile options
+	transcribeCmd.Flags().String("voice-profiles", "", "directory containing voice profile audio files for speaker identification")
 
 	// Bind flags to viper
 	_ = viper.BindPFlag("transcribe.chunk_minutes", transcribeCmd.Flags().Lookup("chunk-minutes"))
@@ -218,13 +224,15 @@ func getTranscribeOptions(cmd *cobra.Command, cfg *config.Config) transcriber.Tr
 	}
 
 	preserveAudio, _ := cmd.Flags().GetBool("preserve-audio")
+	voiceProfilesDir, _ := cmd.Flags().GetString("voice-profiles")
 
 	return transcriber.TranscribeOptions{
-		ChunkMinutes:   chunkMinutes,
-		OverlapSeconds: overlapSeconds,
-		Workers:        workers,
-		Temperature:    temperature,
-		PreserveAudio:  preserveAudio,
+		ChunkMinutes:     chunkMinutes,
+		OverlapSeconds:   overlapSeconds,
+		Workers:          workers,
+		Temperature:      temperature,
+		PreserveAudio:    preserveAudio,
+		VoiceProfilesDir: voiceProfilesDir,
 	}
 }
 
