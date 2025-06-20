@@ -16,14 +16,27 @@ type AudioChunk struct {
 	MimeType string
 }
 
+// AudioFile represents a single audio file for transcription
+type AudioFile struct {
+	Data     io.Reader
+	Format   string
+	MimeType string
+	Filename string
+}
+
 // TranscriptionRequest represents a request to transcribe audio
 type TranscriptionRequest struct {
+	// Primary audio file (main content)
 	Audio       io.Reader
 	AudioFormat string
 	MimeType    string
 	Filename    string
-	Prompt      string
-	Options     TranscriptionOptions
+
+	// Additional audio files (e.g., intro/voice profiles)
+	AdditionalAudio []AudioFile
+
+	Prompt  string
+	Options TranscriptionOptions
 }
 
 // TranscriptionOptions provides additional configuration for transcription
